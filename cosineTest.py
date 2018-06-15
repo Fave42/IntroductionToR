@@ -1,32 +1,45 @@
 #!/bin/bash
 
 import pickle
+from itertools import chain, repeat, islice
 
+
+# Padding of to few LMI-scores per word
+def pad_infinite(iterable, padding=None):
+   return chain(iterable, repeat(padding))
+
+
+def pad(iterable, size, padding=None):
+   return islice(pad_infinite(iterable, padding), size)
+
+
+count51 = 0
+count52 = 0
 dataDict = {}
+lmiDict = {}
+
 dataDict = pickle.load(open("dataDict.pickle", "rb"))
 
-# Ab index 14 (+3) sind die LMI Scores
+# Ab index 14 (+4) sind die LMI Scores
 for key in dataDict:
-    #print(dataDict[key])
+    # print(key)
+    # print(dataDict[key])
+    # print(dataDict[key][14])
+    # print(dataDict[key][18])
 
-    print(dataDict[key])
-    #print(dataDict[key][15])
-    # if (dataDict[key][42]):
-    #     lmiList = []
-    #     lmiList.extend((dataDict[key][15], dataDict[key][18], dataDict[key][21], dataDict[key][24], dataDict[key][27],
-    #                    dataDict[key][30], dataDict[key][33], dataDict[key][36], dataDict[key][39], dataDict[key][42]))
-    #
-    # else:
-    #     lmiList = []
-    #     lmiList.extend((0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+    if (len(dataDict[key]) == 51):
+        count51+=1
+    elif (len(dataDict[key]) == 52):
+        count52+=1
 
-    try:
-        lmiList = []
-        lmiList.extend((dataDict[key][15], dataDict[key][18], dataDict[key][21], dataDict[key][24], dataDict[key][27],
-                       dataDict[key][30], dataDict[key][33], dataDict[key][36], dataDict[key][39], dataDict[key][42]))
+    print(len(dataDict[key]))
 
-    except:
-        lmiList = []
-        lmiList.extend((0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+    lmiList = []
+    lmiList.extend((dataDict[key][14], dataDict[key][18], dataDict[key][22], dataDict[key][26], dataDict[key][30],
+                   dataDict[key][34], dataDict[key][38], dataDict[key][42], dataDict[key][46], dataDict[key][50]))
+    # print(lmiList)
 
-    print (lmiList)
+    lmiDict[key] = lmiList
+
+print(count51)
+print(count52)

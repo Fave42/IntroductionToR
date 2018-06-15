@@ -22,6 +22,17 @@ import numpy as np
 import operator
 import codecs
 import pickle
+from itertools import chain, repeat, islice
+
+
+# Padding of to few LMI-scores per word
+def pad_infinite(iterable, padding=None):
+   return chain(iterable, repeat(padding))
+
+
+def pad(iterable, size, padding=None):
+   return islice(pad_infinite(iterable, padding), size)
+
 
 # Laptop
 # pathNorms = '/home/fabian/Uni-Master/R/Projekt/Data/Norms/Lahl-de/norms_Lahl.csv'
@@ -35,7 +46,7 @@ pathWindows = 'D:/Uni-Master/R/Projekt/Data/Windows/decow16-window-2_freqs_lmi.t
 
 
 def createNormsDict(pathNorms):
-    print("\tCreating normsDict...")
+    print("\tCreating normsDict and Adding frequency=1 for every word...")
     normsDict = {}
     # Generate NormsDict
     with open(pathNorms, 'r') as file:
@@ -48,7 +59,8 @@ def createNormsDict(pathNorms):
 
             tmpList.extend((lineSplit[1], lineSplit[2], lineSplit[3], lineSplit[4], lineSplit[5], lineSplit[6],
                            lineSplit[7], lineSplit[8], lineSplit[9], lineSplit[10], lineSplit[11],
-                           []))  # Empty list for later index=11
+                            1,  # Set every Frequency to 1, index=11
+                           []))  # Empty list for lmi, index=12
 
             normsDict[lineSplit[0]] = tmpList
 
@@ -57,12 +69,13 @@ def createNormsDict(pathNorms):
 
 def processData(normsDict, pathFreq, pathWindows):
     print("\tCreating dataDict...")
-    print("\t\tAdding Frequencies and Lemmas...")
+    print("\t\tAdding Frequencies...")
     with codecs.open(pathFreq, encoding="utf-8") as file:
         for line in file:
             lineSplit = line.split()
             if (lineSplit[0] in normsDict) and (lineSplit[1] == "NN"):
-                normsDict[lineSplit[0]].append(lineSplit[2])  # Frequency
+                # Overwrite Frequency if available
+                normsDict[lineSplit[0]][11] = lineSplit[2]  # Frequency
 
     print("\t\tAdding Distributional Information...")
     with codecs.open(pathWindows, encoding="utf-8") as file:
@@ -73,28 +86,44 @@ def processData(normsDict, pathFreq, pathWindows):
             # Format: target pos context pos frequency lmi-score
             if (lineSplit[0] in normsDict) and (lineSplit[1] == "NN") and (lineSplit[3] == "NN"):
                 tmpList = [lineSplit[2], lineSplit[3], lineSplit[4], lineSplit[5]]
-                normsDict[lineSplit[0]][11].append(tmpList)
+                try:
+                    normsDict[lineSplit[0]][12].append(tmpList)
+                except:
+                    print("Something has gone wrong while appending the tmpList!")
+                    print("tmpList:", tmpList)
+                    print("normsDict[lineSplit[0]][12]:", normsDict[lineSplit[0]][12])
+                    break
 
     print("\t\t\tSorting LMI-Scores...")
     for key in normsDict:
-        windowsListSorted = sorted(dataDict[key][11], key=lambda tup: tup[3], reverse=True)
+        windowsListSorted = sorted(normsDict[key][12], key=lambda tup: tup[3], reverse=True)
         windowsListSorted10 = windowsListSorted[:10]
-        del normsDict[key][11]
-        for item in windowsListSorted10:
-            for innerItem in item:
-                normsDict[key].append(innerItem)
+        del normsDict[key][12]
 
-    print("\tCalculating cosine scores...")
-    for key in normsDict:
-        tmpLMI = normsDict[key][11]
+        # Pad the sorted list to 10 items
+        windowsListSorted10Padded = list(pad(windowsListSorted10, 10, ["NA", "NA", 0, 0]))
+        # print(windowsListSorted10Padded)
+        try:
+            for item in windowsListSorted10Padded:
+                # print(item)
+                for innerItem in item:
+                    # print(innerItem)
+                    normsDict[key].append(innerItem)
+        except:
+            print("Something went terribly wrong while appending or iterating!")
+            print("\t", windowsListSorted10Padded)
+            break
 
+    # print("\tCalculating cosine scores...")
+    # for key in normsDict:
+    #     tmpLMI = normsDict[key][12]
 
     return normsDict
 
 # Sort the windows data and store it
 def storeData(dataDict):
     print("\tWriting Output File...")
-    with open('outputFileTest.txt', 'w') as outputFile:
+    with codecs.open('outputFile.txt', 'w', encoding='utf-8') as outputFile:
         print("\t\tWriting Header...")
         outputFile.write("Word\tVal_N\tVal_M\tVal_SD\tAr_N\tAr_M\tAr_SD\tCon_N\tCon_M\tCon_SD\tlength\tCluster\tFreq\t"
                          + "W_Context\tW_Pos\tW_Freq\tW_LMI\tW_Context\tW_Pos\tW_Freq\tW_LMI\tW_Context\tW_Pos\tW_Freq\tW_LMI\t"
@@ -104,14 +133,27 @@ def storeData(dataDict):
 
         print("\t\tWriting Data...")
         for key in dataDict:
-            tmpString = "\t".join(dataDict[key])
-            outputFile.write(key + "\t" + tmpString + "\n")
+            # print(key)
+            # print(dataDict[key])
+            tmpString = ""
+            try:
+                for item in dataDict[key]:
+                    tmpString = tmpString + "\t" + str(item)
+                # print(tmpString)
+            except:
+                print("Someting went terribly wrong while joining the data!")
+                print(dataDict[key])
+                break
+
+            outputFile.write(key + tmpString + "\n")
 
     return dataDict
 
-
+dataDict = {}
 dataDict = storeData(processData(createNormsDict(pathNorms), pathFreq, pathWindows))
 
 # Dumping dataDict
-# print("\tDumping dataDict as .pickle...")
-# pickle.dump(dataDict, open("dataDict.pickel", "wb"))
+print("\tDumping dataDict as .pickle...")
+pickle.dump(dataDict, open("dataDict.pickle", "wb"))
+
+# Todo: Add commandline parameters
