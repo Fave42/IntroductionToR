@@ -13,25 +13,23 @@ Abbau	23	2,96	2,03	27	2,48	2,74	19	3,79	2,68	5	1
 
 Final Output File:
 
-Word|Val_N|Val_M|Val_SD|Ar_N|Ar_M|Ar_SD|Con_N|Con_M|Con_SD|length|Cluster|Freq|[10 biggest LMI-scores]
+Word|Val_N|Val_M|Val_SD|Ar_N|Ar_M|Ar_SD|Con_N|Con_M|Con_SD|length|Cluster|Freq|[W_Context|W_Freq|W_LMI]*10
 
 '''
 
-import time
-import numpy as np
-import operator
 import codecs
 import pickle
 from itertools import chain, repeat, islice
+import CalculateCosine as cosine
 
 
 # Padding of to few LMI-scores per word
 def pad_infinite(iterable, padding=None):
-   return chain(iterable, repeat(padding))
+    return chain(iterable, repeat(padding))
 
 
 def pad(iterable, size, padding=None):
-   return islice(pad_infinite(iterable, padding), size)
+    return islice(pad_infinite(iterable, padding), size)
 
 
 # Laptop
@@ -84,8 +82,9 @@ def processData(normsDict, pathFreq, pathWindows):
             line = line.replace(":::", "\t")
             lineSplit = line.split()
             # Format: target pos context pos frequency lmi-score
-            if (lineSplit[0] in normsDict) and (lineSplit[1] == "NN") and (lineSplit[3] == "NN"):
-                tmpList = [lineSplit[2], lineSplit[3], lineSplit[4], lineSplit[5]]
+            # Only add distr. information if it's a NN and if the context word is also in the normsDict
+            if (lineSplit[0] in normsDict) and (lineSplit[1] == "NN") and (lineSplit[3] == "NN") and (lineSplit[2] in normsDict):
+                tmpList = [lineSplit[2], lineSplit[4], lineSplit[5]]
                 try:
                     normsDict[lineSplit[0]][12].append(tmpList)
                 except:
@@ -94,14 +93,14 @@ def processData(normsDict, pathFreq, pathWindows):
                     print("normsDict[lineSplit[0]][12]:", normsDict[lineSplit[0]][12])
                     break
 
-    print("\t\t\tSorting LMI-Scores...")
+    print("\t\t\tSorting and padding the LMI-Scores...")
     for key in normsDict:
-        windowsListSorted = sorted(normsDict[key][12], key=lambda tup: tup[3], reverse=True)
+        windowsListSorted = sorted(normsDict[key][12], key=lambda tup: tup[2], reverse=True)
         windowsListSorted10 = windowsListSorted[:10]
         del normsDict[key][12]
 
         # Pad the sorted list to 10 items
-        windowsListSorted10Padded = list(pad(windowsListSorted10, 10, ["NA", "NA", 0, 0]))
+        windowsListSorted10Padded = list(pad(windowsListSorted10, 10, ["NA", 0, 0]))
         # print(windowsListSorted10Padded)
         try:
             for item in windowsListSorted10Padded:
@@ -118,18 +117,23 @@ def processData(normsDict, pathFreq, pathWindows):
     # for key in normsDict:
     #     tmpLMI = normsDict[key][12]
 
-    return normsDict
+    print("\tCalculating the average cosine score for each word...")
 
-# Sort the windows data and store it
+    tmpDataDict = {}
+    tmpDataDict = cosine.calculate(normsDict)
+
+    return tmpDataDict
+
+# Store the data as tsv
 def storeData(dataDict):
     print("\tWriting Output File...")
     with codecs.open('outputFile.txt', 'w', encoding='utf-8') as outputFile:
         print("\t\tWriting Header...")
         outputFile.write("Word\tVal_N\tVal_M\tVal_SD\tAr_N\tAr_M\tAr_SD\tCon_N\tCon_M\tCon_SD\tlength\tCluster\tFreq\t"
-                         + "W_Context\tW_Pos\tW_Freq\tW_LMI\tW_Context\tW_Pos\tW_Freq\tW_LMI\tW_Context\tW_Pos\tW_Freq\tW_LMI\t"
-                         + "W_Context\tW_Pos\tW_Freq\tW_LMI\tW_Context\tW_Pos\tW_Freq\tW_LMI\tW_Context\tW_Pos\tW_Freq\tW_LMI\t"
-                         + "W_Context\tW_Pos\tW_Freq\tW_LMI\tW_Context\tW_Pos\tW_Freq\tW_LMI\tW_Context\tW_Pos\tW_Freq\tW_LMI\t"
-                         + "W_Context\tW_Pos\tW_Freq\tW_LMI\n")
+                         + "W_Context\tW_Freq\tW_LMI\tW_Context\tW_Freq\tW_LMI\tW_Context\tW_Freq\tW_LMI\t"
+                         + "W_Context\tW_Freq\tW_LMI\tW_Context\tW_Freq\tW_LMI\tW_Context\tW_Freq\tW_LMI\t"
+                         + "W_Context\tW_Freq\tW_LMI\tW_Context\tW_Freq\tW_LMI\tW_Context\tW_Freq\tW_LMI\t"
+                         + "W_Context\tW_Freq\tW_LMI\tAvrg_Cosine\n")
 
         print("\t\tWriting Data...")
         for key in dataDict:
