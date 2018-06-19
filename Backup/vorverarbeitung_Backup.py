@@ -7,7 +7,7 @@ Usage: python3 vorverarbeitung.py
 --------------------------------------
 Norms:
 Word 	Valence 			Arousal			Concreteness			Length	Cluster
-	N,Samp Size	M, Mean	SD,standard dev.	N	M	SD	N	M	SD		
+	N,Samp Size	M, Mean	SD,standard dev.	N	M	SD	N	M	SD
 Abbau	23	2,96	2,03	27	2,48	2,74	19	3,79	2,68	5	1
 --------------------------------------
 
@@ -21,9 +21,16 @@ import codecs
 import pickle
 from itertools import chain, repeat, islice
 import CalculateCosine as cosine
-import createKNN
 
-vectorLength = 10
+
+# Padding of to few LMI-scores per word
+def pad_infinite(iterable, padding=None):
+    return chain(iterable, repeat(padding))
+
+
+def pad(iterable, size, padding=None):
+    return islice(pad_infinite(iterable, padding), size)
+
 
 # Laptop
 pathNorms = '/home/fabian/Uni-Master/R/Projekt/Data/Norms/Lahl-de/norms_Lahl.csv'
@@ -34,14 +41,6 @@ pathWindows = '/home/fabian/Uni-Master/R/Projekt/Data/Windows/decow16-window-2_f
 # pathNorms = 'D:/Uni-Master/R/Projekt/Data/Norms/Lahl-de/norms_Lahl.csv'
 # pathFreq = 'D:/Uni-Master/R/Projekt/Data/Freqs/freqs_lemmas_pos.txt'
 # pathWindows = 'D:/Uni-Master/R/Projekt/Data/Windows/decow16-window-2_freqs_lmi.txt'
-
-# Padding of to few LMI-scores per word
-def pad_infinite(iterable, padding=None):
-    return chain(iterable, repeat(padding))
-
-
-def pad(iterable, size, padding=None):
-    return islice(pad_infinite(iterable, padding), size)
 
 
 def createNormsDict(pathNorms):
@@ -97,12 +96,9 @@ def processData(normsDict, pathFreq, pathWindows):
                     break
 
     print("\t\t\tSorting and padding the LMI-Scores...")
-    wordList = []
     for key in normsDict:
-        wordList.append(key)
-
         windowsListSorted = sorted(normsDict[key][12], key=lambda tup: float(tup[2]), reverse=True)
-        windowsListSorted10 = windowsListSorted[:vectorLength]
+        windowsListSorted10 = windowsListSorted[:10]
         del normsDict[key][12]
 
         # Pad the sorted list to 10 items
@@ -119,11 +115,16 @@ def processData(normsDict, pathFreq, pathWindows):
             print("\t", windowsListSorted10Padded)
             break
 
-    print("\tCreating the KNN's...")
-    tmpDict = {}
-    tmpDict = createKNN.run(normsDict, wordList, vectorLength)
+    # print("\tCalculating cosine scores...")
+    # for key in normsDict:
+    #     tmpLMI = normsDict[key][12]
 
-    return tmpDict
+    # print("\tCalculating the average cosine score for each word...")
+    #
+    # tmpDataDict = {}
+    # tmpDataDict = cosine.calculate(normsDict)
+
+    return normsDict
 
 # Store the data as tsv
 def storeData(dataDict):
@@ -160,5 +161,3 @@ dataDict = storeData(processData(createNormsDict(pathNorms), pathFreq, pathWindo
 # Dumping dataDict
 print("\tDumping dataDict as .pickle...")
 pickle.dump(dataDict, open("dataDict.pickle", "wb"))
-
-# Todo: Add commandline parameters
