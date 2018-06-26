@@ -5,8 +5,8 @@
 #
 # Word|Val_N|Val_M|Val_SD|Ar_N|Ar_M|Ar_SD|Con_N|Con_M|Con_SD|length|Cluster|Freq|[W_Context|W_Freq|W_LMI]*10
 
-import pickle
 from scipy import spatial
+import numpy as np
 
 def calculate(lmiLeft, lmiRight):
     cosineResult = 0
@@ -14,5 +14,7 @@ def calculate(lmiLeft, lmiRight):
         cosineResult = 1 - spatial.distance.cosine(lmiLeft, lmiRight)
     except:
         return 0
-
-    return cosineResult
+    if np.isnan(cosineResult):
+        return 0
+    else:
+        return cosineResult
