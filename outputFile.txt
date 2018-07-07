@@ -1,1 +1,0 @@
-Word	Val_N	Val_M	Val_SD	Ar_N	Ar_M	Ar_SD	Con_N	Con_M	Con_SD	length	Cluster	Freq	W_Context	W_Freq	W_LMI	W_Context	W_Freq	W_LMI	W_Context	W_Freq	W_LMI	W_Context	W_Freq	W_LMI	W_Context	W_Freq	W_LMI	W_Context	W_Freq	W_LMI	W_Context	W_Freq	W_LMI	W_Context	W_Freq	W_LMI	W_Context	W_Freq	W_LMI	W_Context	W_Freq	W_LMI	Avrg_Cosine

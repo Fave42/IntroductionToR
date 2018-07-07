@@ -13,7 +13,7 @@ Abbau	23	2,96	2,03	27	2,48	2,74	19	3,79	2,68	5	1
 
 Final Output File:
 
-Word|Val_N|Val_M|Val_SD|Ar_N|Ar_M|Ar_SD|Con_N|Con_M|Con_SD|length|Cluster|Freq|[W_Context|W_Freq|W_LMI]*10
+Word|Val_N|Val_M|Val_SD|Ar_N|Ar_M|Ar_SD|Con_N|Con_M|Con_SD|length|Cluster|Freq|[W_Context|W_Freq|W_LMI]
 
 '''
 
@@ -24,7 +24,7 @@ import pickle
 # import CalculateCosine as cosine
 import createKNN
 
-vectorLength = 100
+vectorLength = 20
 
 # Laptop
 pathNorms = '/home/fabian/Uni-Master/R/Projekt/Data/Norms/Lahl-de/norms_Lahl.csv'
@@ -95,38 +95,6 @@ def processData(normsDict, pathFreq, pathWindows, wordList):
                 # tmpList = [lineSplit[2], lineSplit[4], lineSplit[5]]
 
                 wordPairDict[lineSplit[0]+"_"+lineSplit[2]] = lineSplit[5]
-
-                # try:
-                #     normsDict[lineSplit[0]][12].append(tmpList)
-                # except:
-                #     print("Something has gone wrong while appending the tmpList!")
-                #     print("tmpList:", tmpList)
-                #     print("normsDict[lineSplit[0]][12]:", normsDict[lineSplit[0]][12])
-                #     break
-
-    # print("\t\t\tSorting and padding the LMI-Scores...")
-    # wordList = []
-    # for key in normsDict:
-    #     wordList.append(key)
-    #
-    #     windowsListSorted = sorted(normsDict[key][12], key=lambda tup: float(tup[2]), reverse=True)
-    #     windowsListSorted100 = windowsListSorted[:vectorLength]
-    #     del normsDict[key][12]
-    #
-    #     # Pad the sorted list to 10 items
-    #     # windowsListSorted10Padded = list(pad(windowsListSorted10, 10, ["NA", 0, 0]))
-    #     windowsListSorted10Padded = windowsListSorted100
-    #     # print(windowsListSorted10Padded)
-    #     try:
-    #         for item in windowsListSorted10Padded:
-    #             # print(item)
-    #             for innerItem in item:
-    #                 # print(innerItem)
-    #                 normsDict[key].append(innerItem)
-    #     except:
-    #         print("Something went terribly wrong while appending or iterating!")
-    #         print("\t", windowsListSorted10Padded)
-    #         break
 
     print("\tCreating the KNN's...")
     tmpDict = {}
